@@ -60,7 +60,9 @@ The repaired workflow is validated by re-running the workflow and checking that 
 
 ## Demo
 
-Loom demonstration: add the final Loom URL here.
+Loom demonstration: [Tracing and Debugging Agentic Workflow](https://www.loom.com/share/2d118969e47d42d4827eace8b4e8f34c)
+
+The demo covers the workflow structure, execution tracing, debugging process, prompt guardrails, repair, and validation.
 
 ## Assessment
 
