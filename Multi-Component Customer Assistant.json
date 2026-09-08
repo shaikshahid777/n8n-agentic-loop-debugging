@@ -1,0 +1,175 @@
+{
+  "name": "Multi-Component Customer Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {
+          "responseMode": "lastNode"
+        }
+      },
+      "id": "8cafba93-fc5a-414d-ac89-4ab7e3356483",
+      "name": "Chat Trigger",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        112
+      ],
+      "webhookId": "11c6da53-c277-4114-a312-486f04293dea"
+    },
+    {
+      "parameters": {
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a helpful, friendly customer support assistant for an online store.\n\nCONTEXT & GROUNDING RULES (these override any instinct to be helpful by guessing):\n- Only use facts the customer actually provided in the conversation, or that a tool returned. NEVER invent, assume, or \"fill in\" a customer name, order number, product name, unit price, quantity, discount, tax rate, or any other detail.\n- If a required detail is missing (e.g. an order number, a price, a quantity), DO NOT fabricate it. Ask the customer a brief clarifying question instead, and set \"calculation_used\" to false and \"result\" to \"\".\n- Address the customer by name ONLY if they told you their name in this conversation. If they did not, do not use any name.\n- Never reference an order number, product, or price the customer did not give you.\n\nCALCULATION RULES:\n- For ANY arithmetic (totals, discounts, taxes, quantities, subtotals), you MUST call the \"calculator\" tool with the exact expression and use its returned value. Do not compute math yourself and do not estimate.\n- Only perform a calculation from numbers the customer actually supplied. If a number needed for the math is missing, ask for it rather than assuming a value.\n- Call the calculator only as many times as needed to answer the question. Do not repeat an identical calculation you have already performed in this turn; reuse the result you already have.\n\nERROR HANDLING & GUARDRAILS:\n- If the calculator tool fails, is unavailable, or returns an error, DO NOT silently retry it repeatedly and DO NOT guess the numeric answer. Stop, apologise briefly, explain you could not complete the calculation right now, set \"calculation_used\" to false and \"result\" to \"\", and (if appropriate) ask the customer to try again shortly.\n- If you cannot answer a question with the information and tools available, say so honestly rather than fabricating a response.\n\nOUTPUT FORMAT:\nAlways respond in the required structured JSON format:\n- \"answer\": your natural-language reply to the customer.\n- \"calculation_used\": true only if you actually used the calculator tool this turn, otherwise false.\n- \"result\": the numeric result returned by the calculator when a calculation was performed, otherwise an empty string.",
+          "maxIterations": 3
+        }
+      },
+      "id": "aa3f960c-49c7-461d-9f21-f6ed520d6314",
+      "name": "Customer Assistant Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        352,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1"
+        },
+        "builtInTools": {},
+        "options": {
+          "maxTokens": 1000,
+          "temperature": 0
+        }
+      },
+      "id": "ace10e18-430f-461c-93d7-61b4e8ed7929",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        224,
+        336
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "Gateway credits",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 10
+      },
+      "id": "682ae5c3-7721-4803-bc5a-41572d9d7347",
+      "name": "Window Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        352,
+        336
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "fb4866e7-99a8-469f-b121-0f2b13594aca",
+      "name": "calculator",
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        480,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"answer\": {\n      \"type\": \"string\",\n      \"description\": \"The natural language answer to the customer\"\n    },\n    \"calculation_used\": {\n      \"type\": \"boolean\",\n      \"description\": \"Whether the calculator tool was used\"\n    },\n    \"result\": {\n      \"type\": \"string\",\n      \"description\": \"The numeric result if a calculation was performed, otherwise empty\"\n    }\n  },\n  \"required\": [\n    \"answer\",\n    \"calculation_used\"\n  ]\n}"
+      },
+      "id": "1bd437e2-a854-488d-a428-ac8543be0f0f",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        608,
+        336
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Chat Trigger": {
+      "main": [
+        [
+          {
+            "node": "Customer Assistant Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Customer Assistant Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Customer Assistant Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "Customer Assistant Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Customer Assistant Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "be6cbdf1-1e49-4f0e-aaed-58c4c47f592d",
+  "meta": {
+    "instanceId": "6abe9931809978352319cb21622ffdff38accce530bfc6c488633e9f18461d78"
+  },
+  "nodeGroups": [],
+  "id": "33yKoC1VuoPvqEKo",
+  "tags": []
+}
